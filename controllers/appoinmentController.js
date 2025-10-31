@@ -1,23 +1,29 @@
-const { sql } = require('../config/db');
+// controllers/appointmentController.js
+const Appointment = require("../models/appoinmentModel");
 
-const bookAppointment = async (req, res) => {
+exports.addAppointment = async (req, res) => {
   try {
     const { surveyType, date, time, location, notes } = req.body;
 
     if (!surveyType || !date || !time || !location) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      return res.status(400).json({ message: "All required fields are missing" });
     }
 
-    const result = await sql.query`
-      INSERT INTO Appointments (SurveyType, Date, Time, Location, Notes)
-      VALUES (${surveyType}, ${date}, ${time}, ${location}, ${notes})
-    `;
+    await Appointment.createAppointment({ surveyType, date, time, location, notes });
 
-    res.status(200).json({ message: 'Appointment booked successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(201).json({ message: "Appointment created successfully" });
+  } catch (error) {
+    console.error("Error adding appointment:", error);
+    res.status(500).json({ message: "Server error while creating appointment" });
   }
 };
 
-module.exports = { bookAppointment };
+exports.getAppointments = async (req, res) => {
+  try {
+    const appointments = await Appointment.getAllAppointments();
+    res.status(200).json(appointments);
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    res.status(500).json({ message: "Server error while fetching data" });
+  }
+};
