@@ -1,3 +1,4 @@
+// backend/config/db.js
 const sql = require('mssql');
 require('dotenv').config();
 
@@ -13,13 +14,19 @@ const config = {
   },
 };
 
+let pool; // store a single connection pool
+
 async function connectDB() {
   try {
-    console.log("🧠 Connecting to SQL Server...");
-    await sql.connect(config);
-    console.log('✅ MSSQL Database connected successfully');
+    if (!pool) {
+      console.log("🧠 Connecting to SQL Server...");
+      pool = await sql.connect(config);
+      console.log('✅ MSSQL Database connected successfully');
+    }
+    return pool; // ✅ return pool here
   } catch (err) {
     console.error('❌ Database connection failed:', err);
+    throw err; // so caller knows connection failed
   }
 }
 
