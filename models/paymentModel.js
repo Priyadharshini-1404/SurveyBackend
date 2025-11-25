@@ -1,5 +1,5 @@
 const sql = require("mssql");
-const { connectDB } = require("../config/db");
+const { connectDB } = require("../config/dbConfig");
 
 exports.createPayment = async (payment) => {
   const pool = await connectDB();
@@ -32,4 +32,3 @@ exports.createPayment = async (payment) => {
 
   return result;
 };
-                                                                                                                                                                                      

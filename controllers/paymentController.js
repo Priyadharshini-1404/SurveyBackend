@@ -1,12 +1,41 @@
+const razorpay = require("../config/razorpay");
 const Payment = require("../models/paymentModel");
 
-// ✅ Add a new payment record (with survey details)
-exports.addPayment = async (req, res) => {
+exports.createOrder = async (req, res) => {
+  try {
+    const { amount, userName, surveyType } = req.body;
+
+    if (!amount || !userName || !surveyType) {
+      return res.status(400).json({ success: false, message: "Missing fields" });
+    }
+
+    const orderOptions = {
+      amount: amount * 100, // paise
+      currency: "INR",
+      receipt: `rcpt_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(orderOptions);
+
+    return res.status(200).json({
+      success: true,
+      order,               // Full order object
+      key: process.env.RAZORPAY_KEY_ID, // Frontend Razorpay key
+    });
+  } catch (err) {
+    console.error("Order creation error:", err);
+    return res.status(500).json({ success: false, message: "Failed to create order" });
+  }
+};
+
+exports.verifyPayment = async (req, res) => {
   try {
     const {
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature,
       userName,
       contactNumber,
-      surveyId,
       surveyType,
       selectedStaff,
       date,
@@ -14,22 +43,16 @@ exports.addPayment = async (req, res) => {
       location,
       notes,
       amount,
-      paymentType,
-      paymentStatus,
-      cardNumber,
     } = req.body;
 
-    // ✅ Validate required fields
-    if (!userName || !surveyType || !amount || !paymentType) {
-      return res.status(400).json({ message: "All required fields must be filled" });
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Payment details missing" });
     }
 
-    // ✅ Store all survey + payment data
+    // Save payment in SQL Server
     await Payment.createPayment({
       userName,
       contactNumber,
-
-      surveyId,
       surveyType,
       selectedStaff,
       date,
@@ -37,52 +60,13 @@ exports.addPayment = async (req, res) => {
       location,
       notes,
       amount,
-      paymentType,
-      paymentStatus: paymentStatus || "Pending",
-      cardNumber: paymentType === "Credit / Debit Card" ? cardNumber : null,
+      paymentType: "Razorpay",
+      paymentStatus: "Success",
     });
 
-    res.status(201).json({ message: "✅ Payment and survey details stored successfully" });
+    return res.json({ success: true, message: "Payment saved successfully" });
   } catch (error) {
-    console.error("❌ Error adding payment:", error);
-    res.status(500).json({ message: "Server error while saving payment" });
-  }
-};
-
-// ✅ Get all payments
-exports.getPayments = async (req, res) => {
-  try {
-    const payments = await Payment.getAllPayments();
-    res.status(200).json(payments);
-  } catch (error) {
-    console.error("❌ Error fetching payments:", error);
-    res.status(500).json({ message: "Server error while fetching payments" });
-  }
-};
-
-// ✅ Get payments by username
-exports.getPaymentsByUser = async (req, res) => {
-  try {
-    const { userName } = req.params;
-    const payments = await Payment.getPaymentsByUser(userName);
-    res.status(200).json(payments);
-  } catch (error) {
-    console.error("❌ Error fetching user payments:", error);
-    res.status(500).json({ message: "Server error while fetching user payments" });
-  }
-};
-
-// ✅ Get payment by survey ID (optional)
-exports.getPaymentBySurveyId = async (req, res) => {
-  try {
-    const { surveyId } = req.params;
-    const payment = await Payment.getPaymentBySurveyId(surveyId);
-    if (!payment) {
-      return res.status(404).json({ message: "Payment not found for this survey" });
-    }
-    res.status(200).json(payment);
-  } catch (error) {
-    console.error("❌ Error fetching payment by survey ID:", error);
-    res.status(500).json({ message: "Server error while fetching payment" });
+    console.error("Payment verification error:", error);
+    return res.status(500).json({ success: false, message: "Payment verification failed" });
   }
 };

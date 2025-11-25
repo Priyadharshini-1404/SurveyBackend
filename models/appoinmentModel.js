@@ -1,5 +1,5 @@
 // models/appointmentModel.js
-const { sql } = require("../config/db");
+const { sql } = require("../config/dbConfig");
 
 async function createAppointment(data) {
   const { surveyType, date, time, location, notes } = data;

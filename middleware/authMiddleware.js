@@ -1,20 +1,30 @@
 const jwt = require('jsonwebtoken');
+const sql = require('mssql');
+const config = require('../config/dbConfig');
 
-exports.authMiddleware = (req, res, next) => {
+exports.verifyToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+
+  if (!token) return res.status(401).json({ message: 'No token' });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+
+    req.user = decoded;    // <-- IMPORTANT FIX
     next();
-  } catch {
-    res.status(401).json({ message: 'Token is not valid' });
+  } catch (err) {
+    return res.status(401).json({ message: 'Invalid token' });
   }
 };
 
-exports.adminOnly = (req, res, next) => {
-  if (req.user.role !== 'admin')
-    return res.status(403).json({ message: 'Access denied: Admins only' });
-  next();
+
+exports.adminOnly = async (req, res, next) => {
+  try {
+    const pool = await sql.connect(config);
+    const result = await pool.request().input('id', sql.Int, req.userId)
+      .query('SELECT role FROM Users WHERE id=@id');
+    const role = result.recordset?.[0]?.role;
+    if (role !== 'admin') return res.status(403).json({ message:'Admin only' });
+    next();
+  } catch (err) { console.error(err); res.status(500).json({ message:'Server error' }); }
 };

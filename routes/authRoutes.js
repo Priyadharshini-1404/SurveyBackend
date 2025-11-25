@@ -1,21 +1,12 @@
-const express = require('express');
+// backend/routes/authRoutes.js
+const express = require("express");
 const router = express.Router();
-const { register, login } = require('../controllers/authController');
-const { authMiddleware, adminOnly } = require('../middleware/authMiddleware');
-const { bookAppointment } = require('../controllers/appoinmentController');
-const { createSurveyRequest } = require('../controllers/surveyController');
+const { verifyToken } = require("../middleware/authMiddleware");
+const { register, login, me, refreshToken } = require("../controllers/authController");
 
-router.post('/', createSurveyRequest);
-
-router.post('/register', register);
-router.post('/login', login);
-
-router.get('/admin', authMiddleware, adminOnly, (req, res) => {
-  res.json({ message: 'Welcome, Admin!', user: req.user });
-});
-
-router.get('/me', authMiddleware, (req, res) => {
-  res.json({ message: 'Welcome, User!', user: req.user });
-});
+router.post("/register", register);
+router.post("/login", login);
+router.get("/me", me);
+router.post("/refresh-token", refreshToken);
 
 module.exports = router;

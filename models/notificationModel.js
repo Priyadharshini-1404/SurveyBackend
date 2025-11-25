@@ -1,37 +1,61 @@
-const db = require("../config/db");
+// backend/models/notificationModel.js
+const sql = require("mssql");
+const dbConfig = require("../config/dbConfig");
 
-const Notification = {
-  async createNotification({ senderId, receiverId, message, type }) {
-    const query = `
-      INSERT INTO Notifications (senderId, receiverId, message, type)
-      VALUES (@senderId, @receiverId, @message, @type)
-    `;
-    const request = db.request();
-    request.input("senderId", senderId);
-    request.input("receiverId", receiverId);
-    request.input("message", message);
-    request.input("type", type);
-    await request.query(query);
-  },
+// ✅ Create a reusable connection pool
+let poolPromise = null;
 
-  async getNotifications(receiverId) {
-    const query = `
-      SELECT * FROM Notifications
-      WHERE receiverId = @receiverId
-      ORDER BY createdAt DESC
-    `;
-    const request = db.request();
-    request.input("receiverId", receiverId);
-    const result = await request.query(query);
-    return result.recordset;
-  },
+async function getPool() {
+  try {
+    if (!poolPromise) {
+      poolPromise = sql.connect(dbConfig);
+      console.log("✅ MSSQL pool created");
+    }
+    return await poolPromise;
+  } catch (err) {
+    console.error("❌ Database pool connection failed:", err);
+    throw err;
+  }
+}
 
-  async markAsRead(notificationId) {
-    const query = `UPDATE Notifications SET status='read' WHERE NotificationID=@notificationId`;
-    const request = db.request();
-    request.input("notificationId", notificationId);
-    await request.query(query);
+// ✅ Create a new notification
+exports.createNotification = async (data) => {
+  try {
+    const pool = await getPool();
+    const request = pool.request(); // ✅ pool.request() is valid now
+
+    request.input("senderId", sql.Int, data.senderId);
+    request.input("receiverId", sql.Int, data.receiverId);
+    request.input("message", sql.NVarChar(255), data.message);
+    request.input("type", sql.NVarChar(50), data.type);
+
+    await request.query(`
+      INSERT INTO Notifications (senderId, receiverId, message, type, isRead, createdAt)
+      VALUES (@senderId, @receiverId, @message, @type, 0, GETDATE())
+    `);
+
+    console.log("✅ Notification added to DB");
+  } catch (err) {
+    console.error("❌ Error in createNotification:", err);
+    throw err;
   }
 };
 
-module.exports = Notification;
+// ✅ Get all notifications for a user
+exports.getNotificationsByReceiver = async (receiverId) => {
+  try {
+    const pool = await getPool();
+    const result = await pool
+      .request()
+      .input("receiverId", sql.Int, receiverId)
+      .query(`
+        SELECT * FROM Notifications
+        WHERE receiverId = @receiverId
+        ORDER BY createdAt DESC
+      `);
+    return result.recordset;
+  } catch (err) {
+    console.error("❌ Error in getNotificationsByReceiver:", err);
+    throw err;
+  }
+};

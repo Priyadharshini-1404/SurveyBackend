@@ -1,4 +1,4 @@
-const { sql } = require("../config/db");
+const { sql } = require("../config/dbConfig");
 
 exports.createSurveyRequest = async (req, res) => {
   try {

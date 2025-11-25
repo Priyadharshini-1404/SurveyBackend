@@ -1,5 +1,5 @@
 const sql = require("mssql");
-const { connectDB } = require("../config/db");
+const { connectDB } = require("../config/dbConfig");
 
 const CardPayment = {
   create: async (data) => {
