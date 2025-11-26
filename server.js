@@ -16,6 +16,8 @@ const userRoutes = require("./routes/userRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const razorpayWebRoutes = require("./routes/razorpayRoutes");
+
 // Initialize Express
 const app = express();
 const server = http.createServer(app);
@@ -110,6 +112,7 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/uploads", express.static("uploads"));
+app.use("/api", razorpayWebRoutes);
 
 
 // ✅ Start Server
