@@ -38,6 +38,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(email, password);
     const pool = await sql.connect(config);
 
     const result = await pool.request().input("email", sql.NVarChar, email).query("SELECT * FROM Users WHERE email=@email");

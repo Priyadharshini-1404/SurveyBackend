@@ -50,6 +50,7 @@ exports.createStaff = async (req, res) => {
 // UPDATE staff
 exports.updateStaff = async (req, res) => {
   const { id } = req.params;
+  console.log('update', id);
   const { name, experience, rating, contact, image } = req.body;
   try {
     let pool = await sql.connect(config);

@@ -3,7 +3,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const {sql, connectDB } = require("./config/dbConfig");
+const { sql, connectDB } = require("./config/dbConfig");
 
 
 // Import all routes
@@ -17,6 +17,7 @@ const staffRoutes = require("./routes/staffRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const razorpayWebRoutes = require("./routes/razorpayRoutes");
+const { sendNotification } = require("./config/expopushNotification");
 
 // Initialize Express
 const app = express();
@@ -37,6 +38,7 @@ app.use(express.json());
 connectDB();
 console.log("✅ Database connected:", process.env.DB_SERVER);
 
+sendNotification();
 
 // ✅ Store connected users (userId → socket.id)
 // Store connected users (userId → array of socket IDs)
@@ -95,6 +97,26 @@ io.on("connection", (socket) => {
       }
     });
   });
+});
+
+
+
+// API to save token
+app.post('/api/save-token', async (req, res) => {
+  const { pushToken, userId } = req.body;
+
+  try {
+
+    await sql.query`
+      INSERT INTO PushTokens (userId, token)
+      VALUES (${userId}, ${pushToken})
+    `;
+
+    res.send({ message: 'Token saved successfully' });
+  } catch (err) {
+
+    res.status(500).send('Error saving token');
+  }
 });
 
 
