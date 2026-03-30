@@ -1,10 +1,11 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const surveyController = require('../controllers/surveyController');
-const { verifyToken } = require('../middleware/authMiddleware');
+const controller = require("../controllers/surveyController");
 
-router.post('/', verifyToken, surveyController.createSurveyRequest);
-router.get('/', verifyToken, surveyController.getAllSurveys);
-router.get('/all', verifyToken, surveyController.getAllSurveyRequests);
+router.post("/", controller.createSurveyRequest);
+router.get("/all", controller.getSurveyRequests);
+router.get("/track", controller.getSurveyRequests);
+router.get("/user/:userId", controller.getUserSurveys);
+router.put("/update-status/:id", controller.updateStatus);
 
 module.exports = router;
